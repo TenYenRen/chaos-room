@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chaos Room - Admin Controller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/assets/psi.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b0f17">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+  <!-- Top Navigation & Status -->
+  <header class="admin-header">
+    <div class="brand-section">
+      <div class="brand-icon">Ψ</div>
+      <div class="brand-titles">
+        <span class="brand-title">Activity: Chaos Room</span>
+        <span class="brand-sub">Backend Controller & Session Host</span>
+      </div>
+    </div>
+
+    <div class="header-status-group">
+      <span class="badge badge-green" id="socketStatusBadge">
+        <span style="width:6px;height:6px;border-radius:50%;background:#34d399;"></span>
+        CONNECTED
+      </span>
+      <span class="badge badge-blue" id="spectatorsBadge">
+        👁️ SCREENS: <strong id="spectatorsCount">0</strong>
+      </span>
+      <button class="btn btn-secondary btn-sm" id="btnAudioToggleAdmin" title="Toggle Sound Effects">
+        🔊 SFX: ON
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btnOpenShortcuts" title="Keyboard Shortcuts">
+        ⌨️ KEYS
+      </button>
+      <a href="/api/export?format=csv" class="btn btn-secondary btn-sm" title="Export Results as CSV">
+        📥 CSV
+      </a>
+      <a href="/api/export?format=json" class="btn btn-secondary btn-sm" title="Export Results as JSON">
+        📥 JSON
+      </a>
+      <button class="btn btn-secondary btn-sm" id="lockAdminBtn" title="Lock Session">
+        🔒 LOCK
+      </button>
+      <a href="/" target="_blank" class="btn btn-secondary btn-sm" title="Open Spectator Display">
+        📺 PROJECTOR VIEW
+      </a>
+    </div>
+  </header>
+
+  <!-- Multi-Device Network Link Banner -->
+  <div class="network-bar" id="networkBar">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span>📡 <strong>Multi-Device Connection:</strong> Open the Spectator Display on your projector or secondary device:</span>
+      <span class="network-url-code" id="networkUrlText">http://localhost:3000/</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary btn-sm" id="btnOpenQrModal" style="background:#0284c7;">📱 SCAN QR CODE</button>
+      <button class="btn btn-secondary btn-sm" id="copyUrlBtn">COPY URL</button>
+    </div>
+  </div>
+
+  <main class="admin-container">
+
+    <!-- TOP ROW: Master Stopwatch & Stage Controller -->
+    <div class="admin-grid">
+
+      <!-- MASTER STOPWATCH PANEL (Col 8) -->
+      <section class="panel col-8">
+        <div class="panel-title-bar">
+          <h2 class="panel-title">
+            <span>⏱️</span> Master Stopwatch & Simultaneous Player Timers
+          </h2>
+          <!-- Player Count Quick Stepper -->
+          <div class="player-count-stepper">
+            <button class="btn btn-secondary btn-sm" id="btnSubtractPlayer" title="Subtract one player" style="padding: 4px 10px; font-weight: 800;">−</button>
+            <span class="player-count-label" id="playerCountDisplay">👥 2 PLAYERS</span>
+            <button class="btn btn-primary btn-sm" id="btnAddPlayerStep" title="Add one player" style="padding: 4px 10px; font-weight: 800;">+</button>
+          </div>
+        </div>
+
+        <div class="stopwatch-control-box">
+          <div class="admin-timer-display" id="adminTimerDisplay">00:00.00</div>
+          <div style="margin-bottom: 16px;">
+            <span class="badge badge-blue" id="adminStopwatchStateBadge">IDLE</span>
+            <span style="margin: 0 8px; color: var(--text-muted);">&bull;</span>
+            <span style="font-size: 0.85rem; color: var(--text-secondary);">Recitation Mode:</span>
+            <strong style="color: var(--accent-cyan); font-family: var(--font-mono);">Simultaneous Memory Recitation</strong>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-success btn-lg" id="btnStartStopwatch">▶ START ALL PLAYERS</button>
+            <button class="btn btn-warning btn-lg" id="btnPauseStopwatch" style="display: none;">⏸ PAUSE TIMER</button>
+            <button class="btn btn-secondary btn-lg" id="btnResetStopwatch">↺ RESET MASTER TIMER</button>
+            <button class="btn btn-secondary btn-lg" id="btnResetRoundTimes" style="color: var(--accent-amber); border-color: rgba(245, 158, 11, 0.4);">↺ RESET ROUND RECITATIONS</button>
+          </div>
+
+          <!-- Simultaneous Live Recitation Grid for Each Player -->
+          <div class="simultaneous-grid-header">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>⚡ Player Recitation Stops (Press Key or Click Button)</span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">
+              Click any <kbd class="keybind-pill" style="font-size:0.7rem; padding:1px 5px;">KEY</kbd> to edit keybind
+            </div>
+          </div>
+
+          <div class="simultaneous-timing-grid" id="simultaneousTimingGrid">
+            <!-- Dynamically populated per player -->
+          </div>
+
+        </div>
+      </section>
+
+      <!-- STAGE CONTROLLER (Col 4) -->
+      <section class="panel col-4">
+        <div class="panel-title-bar">
+          <h2 class="panel-title">
+            <span>⚡</span> Stage Controller
+          </h2>
+          <span class="badge badge-blue" id="stageVisibilityBadge">VISIBLE ON FRONTEND</span>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">
+          Displays on the frontend screen in the format <strong>"Stage x"</strong>.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label class="form-label">Stage Number:</label>
+            <div class="input-group">
+              <button class="btn btn-secondary" id="btnStageDec" style="padding: 9px 16px;">−</button>
+              <input type="number" id="inputStageNumber" class="form-input" min="1" max="99" value="1" style="width: 80px; text-align: center; font-weight: 700;">
+              <button class="btn btn-secondary" id="btnStageInc" style="padding: 9px 16px;">+</button>
+              <button class="btn btn-primary" id="btnApplyStage">SET STAGE</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary btn-sm" id="btnToggleStageVisibility" style="flex: 1;">
+              👁️ TOGGLE VISIBILITY
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- MIDDLE ROW: Abstract Code Generator & Controls -->
+    <div class="admin-grid">
+      <section class="panel col-12">
+        <div class="panel-title-bar">
+          <h2 class="panel-title">
+            <span>🔐</span> Abstract Random Code Generator (Non-Semantic, e.g. F9X82)
+          </h2>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="badge" id="codeFrontendStatusBadge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3);">
+              STATUS ON FRONTEND: HIDDEN
+            </span>
+            <button class="btn btn-primary btn-sm" id="btnToggleFrontendCode" style="background: var(--accent-pink);">
+              👁️ SHOW ON FRONTEND
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-grid">
+          <!-- Active Code Display & Action Buttons -->
+          <div class="col-6">
+            <div class="code-box-display">
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Active Cipher Code</div>
+                <div class="active-code-chars" id="adminActiveCodeDisplay">F9X82</div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" id="btnMaskCodeToggle">
+                  👁️ HIDE IN CONTROLLER
+                </button>
+                <button class="btn btn-primary" id="btnGenerateNewCode" style="background: #2563eb;">
+                  🎲 GENERATE NEW CODE
+                </button>
+              </div>
+            </div>
+
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 10px;">
+              * Guaranteed abstract: Filters vowels and words to prevent semantic patterns like CAT81, ensuring abstract tokens like F9X82, 3K7PQ, Z8M4V.
+            </p>
+          </div>
+
+          <!-- History List with Manual Removal -->
+          <div class="col-6">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span class="form-label" style="margin: 0;">Code History (Manually Removable):</span>
+              <button class="btn btn-secondary btn-sm" id="btnClearCodeHistory" style="padding: 2px 8px; font-size: 0.72rem;">CLEAR HISTORY</button>
+            </div>
+            <div class="code-history-list" id="codeHistoryList">
+              <!-- Dynamically populated history entries -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- BOTTOM ROW: Player Management & Tabbed Laps (Col 7) + Dual Leaderboards (Col 5) -->
+    <div class="admin-grid">
+
+      <!-- PLAYER TABS & LAP RECORDER (Col 7) -->
+      <section class="panel col-7">
+        <div class="panel-title-bar">
+          <h2 class="panel-title">
+            <span>👥</span> Player Controls & Tabbed Lap Recorder
+          </h2>
+          <!-- Add Player Form -->
+          <div class="input-group">
+            <input type="text" id="inputNewPlayerName" class="form-input" placeholder="Name (e.g. Player 3)" style="width: 170px; padding: 6px 12px; font-size: 0.82rem;">
+            <button class="btn btn-primary btn-sm" id="btnAddPlayer">+ ADD PLAYER</button>
+          </div>
+        </div>
+
+        <!-- Player Navigation Tabs -->
+        <div class="tabs-nav" id="playerTabsNav">
+          <!-- Dynamically populated tabs: [Player 1] [Player 2] ... -->
+        </div>
+
+        <!-- Selected Player Console -->
+        <div class="tab-content" id="playerTabContent">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 id="currentPlayerTabTitle" style="font-size: 1.25rem; font-weight: 700; color: #fff;">Player 1</h3>
+              <span id="currentPlayerStatsSubtitle" style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-mono);">
+                Best: --:--.-- | Total Laps: 0
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary btn-sm" id="btnSetActiveForStopwatch" style="background: #0284c7;">
+                🎯 SET AS ACTIVE TIMER
+              </button>
+              <button class="btn btn-danger btn-sm" id="btnDeleteCurrentPlayer">
+                🗑️ REMOVE
+              </button>
+            </div>
+          </div>
+
+          <!-- POINT COUNTER (POINTS OUT OF 5) -->
+          <div class="points-selector-row">
+            <div>
+              <strong style="color: #fff; font-size: 0.9rem;">Points Counter (Out of 5):</strong>
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">Direct score reflected on Frontend Leaderboard</div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="points-btn-group" id="pointsButtonGroup">
+                <button class="point-pip-btn" data-point="0">0</button>
+                <button class="point-pip-btn" data-point="1">1</button>
+                <button class="point-pip-btn" data-point="2">2</button>
+                <button class="point-pip-btn" data-point="3">3</button>
+                <button class="point-pip-btn" data-point="4">4</button>
+                <button class="point-pip-btn" data-point="5">5</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- LAP CONTROLS -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <button class="btn btn-success btn-lg" id="btnRecordLapForCurrentTab" style="flex: 1;">
+              🏁 RECORD LAP (CURRENT TIME)
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btnClearLapsCurrentPlayer">
+              CLEAR LAPS
+            </button>
+          </div>
+
+          <!-- LAP TABLE -->
+          <div class="lap-table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>LAP #</th>
+                  <th>LAP TIME</th>
+                  <th>RECORDED AT</th>
+                  <th style="text-align: right;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="playerLapTableBody">
+                <!-- Dynamically populated laps -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- DUAL LEADERBOARDS (Col 5) -->
+      <section class="panel col-5">
+        <div class="panel-title-bar">
+          <h2 class="panel-title">
+            <span>🏆</span> Session Leaderboards
+          </h2>
+        </div>
+
+        <!-- Tabs to switch between the two leaderboards -->
+        <div class="leaderboard-tabs">
+          <button class="lb-nav-btn active" id="tabBtnPointsTimeLb">
+            1. POINTS + TIME (FRONTEND)
+          </button>
+          <button class="lb-nav-btn" id="tabBtnPureTimeLb">
+            2. PURE TIME ONLY
+          </button>
+        </div>
+
+        <!-- Leaderboard 1: Points + Time -->
+        <div id="viewPointsTimeLb">
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">
+            * Mirror of frontend display: Ranked by Points (descending), then Best Lap Time.
+          </div>
+          <div class="lap-table-wrap" style="max-height: 400px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>RANK</th>
+                  <th>PLAYER</th>
+                  <th>POINTS</th>
+                  <th>BEST TIME</th>
+                </tr>
+              </thead>
+              <tbody id="adminPointsTimeLbBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Leaderboard 2: Pure Time Only -->
+        <div id="viewPureTimeLb" style="display: none;">
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">
+            * Pure speed ranking: Players sorted strictly by fastest recorded lap time.
+          </div>
+          <div class="lap-table-wrap" style="max-height: 400px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>RANK</th>
+                  <th>PLAYER</th>
+                  <th>BEST LAP</th>
+                  <th>TOTAL LAPS</th>
+                </tr>
+              </thead>
+              <tbody id="adminPureTimeLbBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Reset All Session Data -->
+        <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid #1e293b; display: flex; justify-content: flex-end;">
+          <button class="btn btn-secondary btn-sm" id="btnResetEntireGame" style="color: #f87171;">
+            ⚠️ RESET ENTIRE GAME SESSION
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- PIN Authentication Modal -->
+  <div class="modal-overlay" id="pinAuthModal" style="display: none;">
+    <div class="modal-card">
+      <div style="font-size: 2.5rem; margin-bottom: 12px;">🔒</div>
+      <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: #fff;">Host Controller Access</h3>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+        Please enter the admin security PIN to operate the Chaos Room session.
+      </p>
+
+      <form id="pinAuthForm">
+        <input type="password" id="pinInput" class="form-input" placeholder="Enter PIN (Default: chaos2026)" style="width: 100%; text-align: center; font-size: 1.1rem; letter-spacing: 0.15em; margin-bottom: 14px;" autofocus>
+        <div id="pinErrorMsg" style="color: var(--accent-red); font-size: 0.8rem; margin-bottom: 12px; display: none;">
+          Incorrect PIN. Please try again.
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+          UNLOCK CONTROLLER
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR Code Modal for Mobile / Projector Scanning -->
+  <div class="modal-overlay" id="qrModal" style="display: none;">
+    <div class="modal-card" style="max-width: 440px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; color: #fff;">📱 Connect Secondary Device</h3>
+        <button class="btn btn-secondary btn-sm" id="btnCloseQrModal" style="padding: 4px 10px;">✕</button>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">
+        Scan with your smartphone camera or projector device to open the <strong>Spectator Display</strong> instantly:
+      </p>
+      <div style="background: #090d15; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+        <img id="qrCodeImage" src="/api/qr" alt="Projector QR Code" style="width: 200px; height: 200px; border-radius: 8px;">
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-cyan); word-break: break-all; margin-bottom: 16px;" id="qrTargetUrlDisplay">
+        http://localhost:3000/
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btnCopyQrUrl" style="width: 100%;">
+        📋 COPY SPECTATOR URL
+      </button>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="modal-overlay" id="shortcutsModal" style="display: none;">
+    <div class="modal-card" style="max-width: 480px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; color: #fff;">⌨️ Host Keyboard Hotkeys</h3>
+        <button class="btn btn-secondary btn-sm" id="btnCloseShortcutsModal" style="padding: 4px 10px;">✕</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.88rem;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+          <span style="color: var(--text-secondary);">Start / Pause Stopwatch</span>
+          <span class="badge badge-blue">SPACE</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+          <span style="color: var(--text-secondary);">Record Lap for Active Player</span>
+          <span class="badge badge-blue">L</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+          <span style="color: var(--text-secondary);">Generate New Abstract Code</span>
+          <span class="badge badge-blue">C</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+          <span style="color: var(--text-secondary);">Toggle Code on Frontend Screen</span>
+          <span class="badge badge-blue">V</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+          <span style="color: var(--text-secondary);">Reset Stopwatch</span>
+          <span class="badge badge-blue">R</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-secondary);">Toggle Fullscreen (Projector)</span>
+          <span class="badge badge-blue">F</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Socket.io Script & Admin Logic -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

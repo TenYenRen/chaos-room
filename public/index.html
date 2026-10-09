@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity: Chaos Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/assets/psi.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#00f3ff">
+  <link rel="stylesheet" href="/css/frontend.css">
+</head>
+<body>
+
+  <!-- Connection Status Badge -->
+  <div class="connection-pill" id="connectionPill">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="connectionText">SYNCING ENGINE...</span>
+  </div>
+
+  <div class="container">
+    
+    <!-- Top Header Bar with Psi Symbol and Title -->
+    <header class="header-hero">
+      <div class="title-group">
+        <div class="psi-emblem-wrap">
+          <img src="/assets/psi.svg" alt="Psychology Psi Emblem" class="psi-emblem-svg">
+        </div>
+        <div class="title-content">
+          <span class="subtitle-badge">PSYCHOLOGY EXPERIMENT PROTOCOL</span>
+          <h1 class="main-title">Activity: Chaos Room</h1>
+        </div>
+      </div>
+
+      <div class="stage-hero-badge" id="stageBadge">
+        <span class="stage-icon">⚡</span>
+        <span class="stage-text" id="stageText">Stage 1</span>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="fullscreen-btn" id="frontendAudioToggle" title="Toggle Sound Effects">
+          <span id="frontendAudioIcon">🔊</span>
+          <span id="frontendAudioLabel">SFX</span>
+        </button>
+        <button class="fullscreen-btn" id="fullscreenToggle" title="Toggle Fullscreen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <span>EXPAND</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Center Display: Master Stopwatch & Code Chamber -->
+    <section class="center-grid">
+      
+      <!-- Synchronized Master Stopwatch -->
+      <div class="display-card stopwatch-card">
+        <div class="card-header-bar">
+          <div class="card-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>SYNCHRONIZED STOPWATCH</span>
+          </div>
+          <span class="status-tag idle" id="stopwatchStatusTag">IDLE</span>
+        </div>
+
+        <div class="stopwatch-readout">
+          <div class="timer-digits" id="timerDisplay">00:00.00</div>
+          <div class="active-player-banner" id="activePlayerBanner" style="display: none;">
+            <span>ACTIVE FOCUS:</span>
+            <strong id="activePlayerName">PLAYER 1</strong>
+          </div>
+        </div>
+
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dark); text-align: center;">
+          HOST CONTROLLER AUTHORITATIVE TIME
+        </div>
+      </div>
+
+      <!-- Secret Code Chamber (Controlled by Backend) -->
+      <div class="display-card code-card">
+        <div class="card-header-bar">
+          <div class="card-label" style="color: var(--pink-neon);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>SECURITY ACCESS CODE</span>
+          </div>
+          <span class="status-tag" id="codeVisibilityTag" style="background: rgba(255, 0, 122, 0.15); color: var(--pink-neon); border: 1px solid rgba(255,0,122,0.3);">ENCRYPTED</span>
+        </div>
+
+        <div class="code-display-wrap" id="codeDisplayContainer">
+          <!-- Populated dynamically: Revealed Code OR Locked Placeholder -->
+          <div class="locked-code-box" id="lockedCodeBox">
+            <div class="lock-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div class="masked-glyphs">
+              <div class="masked-slot">•</div>
+              <div class="masked-slot">•</div>
+              <div class="masked-slot">•</div>
+              <div class="masked-slot">•</div>
+              <div class="masked-slot">•</div>
+            </div>
+            <span class="locked-msg">CODE MASKED BY HOST CONTROLLER</span>
+          </div>
+
+          <div class="revealed-code-box" id="revealedCodeBox" style="display: none;">
+            <div class="code-glyph" id="glyph0">-</div>
+            <div class="code-glyph" id="glyph1">-</div>
+            <div class="code-glyph" id="glyph2">-</div>
+            <div class="code-glyph" id="glyph3">-</div>
+            <div class="code-glyph" id="glyph4">-</div>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <span class="code-status-caption" id="codeCaption">STANDBY FOR PROTOCOL AUTHORIZATION</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Point-Time Leaderboard Section -->
+    <section class="leaderboard-section">
+      <div class="section-head">
+        <div class="section-title-wrap">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <h2 class="section-title">Point-Time Leaderboard</h2>
+        </div>
+        <div class="criteria-hint">
+          RANKING: POINTS (MAX 5) &bull; TIE-BREAKER: RECITATION TIME
+        </div>
+      </div>
+
+      <div class="leaderboard-table-header">
+        <div>RANK</div>
+        <div>PLAYER</div>
+        <div>POINTS (OUT OF 5)</div>
+        <div>RECITATION TIME</div>
+      </div>
+
+      <div class="leaderboard-list" id="leaderboardList">
+        <!-- Dynamically injected rows -->
+        <div class="empty-leaderboard">Awaiting participants and scoring...</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Socket.io Script & Client Logic -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/frontend.js"></script>
+</body>
+</html>

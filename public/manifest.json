@@ -1,0 +1,18 @@
+{
+  "name": "Activity: Chaos Room",
+  "short_name": "Chaos Room",
+  "description": "Multi-device real-time event stopwatch, scoring, code generator and leaderboard",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07090e",
+  "theme_color": "#00f3ff",
+  "icons": [
+    {
+      "src": "/assets/psi.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
