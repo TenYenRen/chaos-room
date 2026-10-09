@@ -165,7 +165,8 @@ function getPublicState() {
         lapsCount: p.laps.length,
         bestLapMs: effectiveMs,
         bestLapFormatted: effectiveMs !== null ? formatTime(effectiveMs) : '--:--.--',
-        lastLapFormatted: p.laps.length > 0 ? p.laps[p.laps.length - 1].formatted : '--:--.--'
+        lastLapFormatted: p.laps.length > 0 ? p.laps[p.laps.length - 1].formatted : '--:--.--',
+        laps: p.laps // Propagate laps array to frontend for point breakdown display
       };
     }),
     serverTimestamp: Date.now()
@@ -228,7 +229,7 @@ app.get('/api/export', (req, res) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
   if (format === 'csv') {
-    let csv = 'Rank,Player Number,Player Name,Points (Out of 5),Best Lap Time,Total Laps,Recorded Lap Times\n';
+    let csv = 'Rank,Player Number,Player Name,Points,Best Lap Time,Total Laps,Recorded Lap Times\n';
     const sorted = [...gameState.players].sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       const aTime = a.laps.length > 0 ? Math.min(...a.laps.map(l => l.timeMs)) : Infinity;
@@ -238,7 +239,8 @@ app.get('/api/export', (req, res) => {
 
     sorted.forEach((p, idx) => {
       const bestMs = p.laps.length > 0 ? Math.min(...p.laps.map(l => l.timeMs)) : null;
-      const lapTimes = p.laps.map(l => l.formatted).join(' | ');
+      // Include lap points in the CSV breakdown
+      const lapTimes = p.laps.map(l => `${l.formatted} (${l.points || 0}pt)`).join(' | ');
       csv += `${idx + 1},${p.number},"${p.name}",${p.points},${formatTime(bestMs)},${p.laps.length},"${lapTimes}"\n`;
     });
 
@@ -360,7 +362,8 @@ io.on('connection', (socket) => {
       lapNum,
       timeMs: currentElapsed,
       formatted: formatTime(currentElapsed),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      points: 0 // Initialize to 0 points
     };
     player.laps.push(newLap);
     broadcastState();
@@ -376,6 +379,8 @@ io.on('connection', (socket) => {
     player.laps.forEach((l, idx) => {
       l.lapNum = idx + 1;
     });
+    // Re-calculate points just in case the deleted lap had points assigned
+    player.points = player.laps.reduce((sum, l) => sum + (l.points || 0), 0);
     broadcastState();
   });
 
@@ -384,6 +389,7 @@ io.on('connection', (socket) => {
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) return;
     player.laps = [];
+    player.points = 0; // Clear accumulated points if laps are wiped
     broadcastState();
   });
 
@@ -467,7 +473,8 @@ io.on('connection', (socket) => {
       lapNum,
       timeMs: stoppedTime,
       formatted: formatTime(stoppedTime),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      points: 0 // Initialize to 0 points
     });
 
     broadcastState();
@@ -505,9 +512,21 @@ io.on('connection', (socket) => {
     if (!checkAuth(pin)) return;
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) return;
-    // Ensure points are strictly between 0 and 5
-    const clampedPoints = Math.max(0, Math.min(5, parseInt(points, 10) || 0));
-    player.points = clampedPoints;
+    // Allow flexible points mapping rather than clamping to 0-5
+    player.points = parseInt(points, 10) || 0;
+    broadcastState();
+  });
+
+  socket.on('lap:set_points', ({ pin, playerId, lapId, points }) => {
+    if (!checkAuth(pin)) return;
+    const player = gameState.players.find(p => p.id === playerId);
+    if (!player) return;
+    const lap = player.laps.find(l => l.id === lapId);
+    if (!lap) return;
+    
+    lap.points = parseInt(points, 10) || 0;
+    // Auto-calculate cumulative points based on lap scores
+    player.points = player.laps.reduce((sum, l) => sum + (l.points || 0), 0);
     broadcastState();
   });
 
