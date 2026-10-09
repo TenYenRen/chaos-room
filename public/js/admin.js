@@ -393,8 +393,10 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; font-size:0.75rem;">
           <span style="color:var(--text-muted); font-weight:600;">Score: <span style="color:var(--green-neon); font-size:0.85rem; margin-left:4px;">${p.points || 0}</span></span>
           <div style="display:flex; gap:3px;">
-            ${[0,1,2,3,4,5].map(pt => `
-              <button class="point-pip-btn" data-playerid="${p.id}" data-point="${pt}" style="width:24px; height:24px; font-size:0.72rem; padding:0; border-radius:4px;" title="Override overall score to ${pt}">${pt}</button>
+            ${[-1, 1, 2, 3, 5].map(pt => `
+              <button class="point-pip-btn" data-playerid="${p.id}" data-point="${pt}" style="width:24px; height:24px; font-size:0.72rem; padding:0; border-radius:4px; font-weight:bold;" title="Add ${pt} points">
+                ${pt > 0 ? '+' : ''}${pt}
+              </button>
             `).join('')}
           </div>
         </div>
@@ -430,12 +432,12 @@
       });
     });
 
-    // Attach quick point scoring listeners (Overall override)
+    // Attach quick point scoring listeners
     simultaneousTimingGrid.querySelectorAll('.point-pip-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const pId = btn.getAttribute('data-playerid');
         const pt = parseInt(btn.getAttribute('data-point'), 10);
-        socket.emit('player:set_points', { pin: adminPin, playerId: pId, points: pt });
+        socket.emit('player:add_points', { pin: adminPin, playerId: pId, points: pt });
       });
     });
   }
@@ -656,15 +658,22 @@
 
     // Calculate best lap
     const bestMs = player.laps.length > 0 ? Math.min(...player.laps.map(l => l.timeMs)) : null;
-    currentPlayerStatsSubtitle.textContent = `Best Lap: ${formatTime(bestMs)} | Total Recorded Laps: ${player.laps.length} | Total Points: ${player.points}`;
+    currentPlayerStatsSubtitle.textContent = `Best Lap: ${formatTime(bestMs)} | Total Recorded Laps: ${player.laps.length} | Total Points: ${player.points || 0}`;
 
-    // Deselect all quick-points visually since points are lap-based mostly
-    const pBtns = pointsButtonGroup.querySelectorAll('.point-pip-btn');
-    pBtns.forEach(btn => {
-      btn.classList.remove('selected');
+    // Dynamically render the main points buttons for additive scoring
+    pointsButtonGroup.innerHTML = [-1, 1, 2, 3, 5].map(pt => 
+      `<button class="btn btn-secondary point-pip-btn" data-point="${pt}" style="padding:4px 12px; font-weight:bold;">${pt > 0 ? '+' : ''}${pt} Pts</button>`
+    ).join('');
+
+    pointsButtonGroup.querySelectorAll('.point-pip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!selectedPlayerId) return;
+        const pts = parseInt(btn.getAttribute('data-point'), 10);
+        socket.emit('player:add_points', { pin: adminPin, playerId: selectedPlayerId, points: pts });
+      });
     });
 
-    // Populate Laps table with point inputs
+    // Populate Laps table
     playerLapTableBody.innerHTML = '';
     if (player.laps.length === 0) {
       playerLapTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:16px;">No laps recorded yet. Click "Record Lap" above!</td></tr>';
@@ -683,7 +692,7 @@
         `;
         playerLapTableBody.appendChild(tr);
       });
-
+      
       // Bind lap point inputs
       playerLapTableBody.querySelectorAll('.lap-point-input').forEach(input => {
         input.addEventListener('change', (e) => {
@@ -701,15 +710,6 @@
       });
     }
   }
-
-  // General Points Click Listeners (Override)
-  pointsButtonGroup.querySelectorAll('.point-pip-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!selectedPlayerId) return;
-      const pts = parseInt(btn.getAttribute('data-point'), 10);
-      socket.emit('player:set_points', { pin: adminPin, playerId: selectedPlayerId, points: pts });
-    });
-  });
 
   btnSetActiveForStopwatch.addEventListener('click', () => {
     if (!selectedPlayerId) return;
