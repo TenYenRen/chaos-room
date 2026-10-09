@@ -1,0 +1,10 @@
+services:
+  chaos-room:
+    build: .
+    container_name: chaos_room_server
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - ADMIN_PIN=chaos2026
+    restart: unless-stopped

@@ -1,0 +1,28 @@
+{
+  "name": "chaos-room",
+  "version": "1.0.0",
+  "description": "Activity: Chaos Room - Multi-device synchronized stopwatch, point counter, code generator and leaderboards",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test_sync.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.7.5"
+  },
+  "keywords": [
+    "chaos-room",
+    "stopwatch",
+    "socket.io",
+    "real-time",
+    "leaderboard"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  }
+}
