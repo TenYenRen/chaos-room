@@ -374,13 +374,16 @@ io.on('connection', (socket) => {
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) return;
 
+    const lapToDelete = player.laps.find(l => l.id === lapId);
+    if (lapToDelete) {
+      player.points = (player.points || 0) - (lapToDelete.points || 0);
+    }
+
     player.laps = player.laps.filter(l => l.id !== lapId);
     // Re-index laps
     player.laps.forEach((l, idx) => {
       l.lapNum = idx + 1;
     });
-    // Re-calculate points just in case the deleted lap had points assigned
-    player.points = player.laps.reduce((sum, l) => sum + (l.points || 0), 0);
     broadcastState();
   });
 
@@ -388,8 +391,12 @@ io.on('connection', (socket) => {
     if (!checkAuth(pin)) return;
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) return;
+    
+    // Subtract all lap points from the total
+    const totalLapPts = player.laps.reduce((sum, l) => sum + (l.points || 0), 0);
+    player.points = (player.points || 0) - totalLapPts;
+    
     player.laps = [];
-    player.points = 0; // Clear accumulated points if laps are wiped
     broadcastState();
   });
 
@@ -508,12 +515,15 @@ io.on('connection', (socket) => {
     broadcastState();
   });
 
-  socket.on('player:set_points', ({ pin, playerId, points }) => {
+  socket.on('player:add_points', ({ pin, playerId, points }) => {
     if (!checkAuth(pin)) return;
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) return;
-    // Allow flexible points mapping rather than clamping to 0-5
-    player.points = parseInt(points, 10) || 0;
+    
+    // Add points mathematically instead of replacing
+    const ptsToAdd = parseInt(points, 10) || 0;
+    player.points = (player.points || 0) + ptsToAdd;
+    
     broadcastState();
   });
 
@@ -524,9 +534,15 @@ io.on('connection', (socket) => {
     const lap = player.laps.find(l => l.id === lapId);
     if (!lap) return;
     
-    lap.points = parseInt(points, 10) || 0;
-    // Auto-calculate cumulative points based on lap scores
-    player.points = player.laps.reduce((sum, l) => sum + (l.points || 0), 0);
+    const oldPts = lap.points || 0;
+    const newPts = parseInt(points, 10) || 0;
+    
+    lap.points = newPts;
+    
+    // Calculate the difference and apply it to total points
+    // This allows manual point adds to co-exist with lap points safely!
+    player.points = (player.points || 0) - oldPts + newPts;
+    
     broadcastState();
   });
 
